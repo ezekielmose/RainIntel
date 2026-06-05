@@ -1,5 +1,9 @@
 package com.valentinerutto.farmvision.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
@@ -38,17 +42,24 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import com.valentinerutto.farmvision.util.location.DeviceLocationProvider
 import com.valentinerutto.farmvision.data.models.ForecastDay
+import com.valentinerutto.farmvision.ui.WeatherViewModel
 import com.valentinerutto.farmvision.ui.theme.BottomNavContentInactive
 import com.valentinerutto.farmvision.ui.theme.BottomNavIndicatorInactive
 import com.valentinerutto.farmvision.ui.theme.BottomNavLabelInactive
@@ -65,6 +76,8 @@ import com.valentinerutto.farmvision.ui.theme.Mint
 import com.valentinerutto.farmvision.ui.theme.RainBlue
 import com.valentinerutto.farmvision.ui.theme.ScreenBackground
 import com.valentinerutto.farmvision.ui.theme.SunYellow
+import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
 
 
 private data class BottomNavDestination(
@@ -76,7 +89,42 @@ private data class BottomNavDestination(
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
+    weatherViewModel: WeatherViewModel = koinViewModel(),
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val locationProvider = remember(context) { DeviceLocationProvider(context) }
+    val locationPermissions = remember {
+        arrayOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+    }
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val hasPermission = permissions.values.any { isGranted -> isGranted }
+        if (hasPermission) {
+            coroutineScope.launch {
+                loadWeatherFromCurrentLocation(locationProvider, weatherViewModel)
+            }
+        } else {
+            weatherViewModel.onLocationError("Location permission is required to load local weather")
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val hasLocationPermission = locationPermissions.any { permission ->
+            ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+        }
+
+        if (hasLocationPermission) {
+            loadWeatherFromCurrentLocation(locationProvider, weatherViewModel)
+        } else {
+            locationPermissionLauncher.launch(locationPermissions)
+        }
+    }
+
     val forecastDays = listOf(
         ForecastDay("Mon", "23°", Mint),
         ForecastDay("Tue", "26°", SunYellow, selected = true),
@@ -106,6 +154,23 @@ fun HomeScreen(
             ScanFarmButton()
             Spacer(modifier = Modifier.height(20.dp))
         }
+    }
+}
+
+private suspend fun loadWeatherFromCurrentLocation(
+    locationProvider: DeviceLocationProvider,
+    weatherViewModel: WeatherViewModel
+) {
+
+    val currentLocation = locationProvider.getCurrentLocation()
+
+    if (currentLocation != null) {
+        weatherViewModel.loadWeather(
+            lat = currentLocation.latitude,
+            lon = currentLocation.longitude
+        )
+    } else {
+        weatherViewModel.onLocationError("Unable to get your current location")
     }
 }
 

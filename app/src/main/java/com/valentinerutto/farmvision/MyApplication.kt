@@ -2,6 +2,8 @@ package com.valentinerutto.farmvision
 
 import android.app.Application
 import com.valentinerutto.farmvision.di.appModule
+import com.valentinerutto.farmvision.di.databaseModule
+import com.valentinerutto.farmvision.di.networkingModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.GlobalContext.startKoin
@@ -20,7 +22,10 @@ class MyApplication: Application() {
         startKoin{
             androidLogger( level = Level.DEBUG)
             androidContext(this@MyApplication)
-            modules(appModule)
+
+            modules(appModule,networkingModule, databaseModule)
+
+
         }
 
     }

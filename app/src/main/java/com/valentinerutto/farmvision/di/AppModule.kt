@@ -9,10 +9,12 @@ import org.koin.dsl.module
 import retrofit2.Retrofit
 import kotlin.coroutines.EmptyCoroutineContext.get
 
-val appModule = module {
+ val appModule = module {
     single { MyApplication.INSTANCE }
 }
-    val networkingModule = module {
+
+
+ val networkingModule = module {
         single { RetrofitClient.provideOkHttpClient() }
         single { RetrofitClient.provideRetrofit(RetrofitClient.BASE_URL, get()) }
 
@@ -23,10 +25,10 @@ val appModule = module {
         }
     }
 
-val databaseModule ={
-    single { FarmVisionDatabase.getDatabase(context = androidContext()) }
-    single { get<FarmVisionDatabase>().FarmVisionDao() }
-
+val databaseModule = module {
+    single { FarmVisionDatabase.getDatabase(get()) }
+    single { get<FarmVisionDatabase>().farmVisionDao() }
 }
+
 
 

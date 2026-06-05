@@ -244,7 +244,7 @@ private fun WeatherUiData?.toForecastDays(): List<ForecastDay> {
 
     return dailyWeather.take(5).mapIndexed { index, daily ->
         ForecastDay(
-            day = daily.date.toDayOfWeek(),
+            day = daily.dayOfTheWeek,
             temperature = "${daily.temp_max.toInt()}°",
             markerColor = daily.condition_code.toWeatherMarkerColor(),
             selected = index == 0

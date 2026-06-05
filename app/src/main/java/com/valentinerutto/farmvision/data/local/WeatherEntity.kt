@@ -3,6 +3,7 @@ package com.valentinerutto.farmvision.data.local
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.valentinerutto.farmvision.data.network.response.WeatherResponse
+import com.valentinerutto.farmvision.util.toDayOfWeek
 
 @Entity(tableName = "weather_table")
 data class WeatherEntity(
@@ -45,7 +46,8 @@ data class DailyWeatherEntity(
     val sunset: String,
     val temp_max: Double,
     val temp_min: Double,
-    val wind_max: Double
+    val wind_max: Double,
+    val dayOfTheWeek: String
 
 )
 
@@ -65,7 +67,8 @@ fun mapToDailyWeatherEntity(weatherResponse: WeatherResponse): List<DailyWeather
                 sunset = dailyWeather.sunset.orEmpty(),
                 temp_max = dailyWeather.temp_max ?: 0.0,
                 temp_min = dailyWeather.temp_min ?: 0.0,
-                wind_max = dailyWeather.wind_max ?: 0.0
+                wind_max = dailyWeather.wind_max ?: 0.0,
+                dayOfTheWeek = dailyWeather.date.orEmpty().toDayOfWeek()
             )
         }
     }

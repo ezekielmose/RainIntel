@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
 
-    const val BASE_URL = " https://api.weather-ai.co/v1/"
+    const val BASE_URL = "https://api.weather-ai.co/v1/"
 
     fun provideRetrofit(baseUrl: String, okHttpClient: OkHttpClient): Retrofit {
 
@@ -19,13 +19,9 @@ object RetrofitClient {
             .addConverterFactory(GsonConverterFactory.create()).build()
     }
 
-    fun createOkClient(): OkHttpClient {
-        return OkHttpClient.Builder().addInterceptor(createLoggingInterceptor())
-            .build()
-    }
-
     private fun createLoggingInterceptor(): HttpLoggingInterceptor {
         return HttpLoggingInterceptor().apply {
+            redactHeader("Authorization")
 
             level = if (BuildConfig.DEBUG){
                 HttpLoggingInterceptor.Level.BODY
@@ -39,17 +35,17 @@ object RetrofitClient {
 
     fun provideOkHttpClient(): OkHttpClient {
         return OkHttpClient.Builder()
-            .addInterceptor(createLoggingInterceptor())
             .addInterceptor { chain ->
-            chain.proceed(
-                chain.request().newBuilder()
-                    .addHeader(
-                        "Authorization",
-                        "Bearer ${BuildConfig.WEATHER_API_KEY}"
+                chain.proceed(
+                    chain.request().newBuilder()
+                        .header(
+                            "Authorization",
+                            "Bearer ${BuildConfig.WEATHER_API_KEY}"
+                        )
+                        .build()
                     )
-                    .build()
-            )
-        }
+            }
+            .addInterceptor(createLoggingInterceptor())
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .build()

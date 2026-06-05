@@ -13,8 +13,8 @@ data class WeatherEntity(
     val icon_path: String,
     val temperature: Double,
     val time: String,
-    val wind_direction: Int,
-    val wind_speed: Int
+    val wind_direction: Double,
+    val wind_speed: Double
 )
 
 fun WeatherResponse.toWeatherEntity(): WeatherEntity {
@@ -25,8 +25,8 @@ fun WeatherResponse.toWeatherEntity(): WeatherEntity {
         icon_path = currentWeather?.icon_path.orEmpty(),
         temperature = currentWeather?.temperature ?: 0.0,
         time = currentWeather?.time.orEmpty(),
-        wind_direction = currentWeather?.wind_direction ?: 0,
-        wind_speed = currentWeather?.wind_speed ?: 0
+        wind_direction = currentWeather?.wind_direction ?: 0.0,
+        wind_speed = currentWeather?.wind_speed ?: 0.0
     )
 }
 

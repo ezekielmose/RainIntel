@@ -380,7 +380,7 @@ private fun HomeHeader(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "FarmPulse",
+                text = "Farm Vision",
                 color = DeepGreen,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.SemiBold,

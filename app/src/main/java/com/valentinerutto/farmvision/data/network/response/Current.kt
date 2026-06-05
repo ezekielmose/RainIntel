@@ -6,6 +6,6 @@ data class Current(
     val icon_path: String?,
     val temperature: Double?,
     val time: String?,
-    val wind_direction: Int?,
-    val wind_speed: Int?
+    val wind_direction: Double?,
+    val wind_speed: Double?
 )

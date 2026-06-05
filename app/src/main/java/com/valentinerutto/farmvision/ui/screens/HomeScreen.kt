@@ -93,17 +93,22 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+
     val locationProvider = remember(context) { DeviceLocationProvider(context) }
+
     val locationPermissions = remember {
         arrayOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
         )
     }
+
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
+
         val hasPermission = permissions.values.any { isGranted -> isGranted }
+
         if (hasPermission) {
             coroutineScope.launch {
                 loadWeatherFromCurrentLocation(locationProvider, weatherViewModel)
@@ -111,6 +116,7 @@ fun HomeScreen(
         } else {
             weatherViewModel.onLocationError("Location permission is required to load local weather")
         }
+
     }
 
     LaunchedEffect(Unit) {

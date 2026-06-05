@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface WeatherDao {
 
-        @Query("SELECT * FROM weather_table WHERE id = 'latest'")
+        @Query("SELECT * FROM weather_table")
         fun observeLatest(): Flow<WeatherEntity?>
 
         @Insert(onConflict = OnConflictStrategy.REPLACE)

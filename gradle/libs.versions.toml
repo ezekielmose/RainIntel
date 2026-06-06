@@ -27,6 +27,7 @@ navigationCompose = "2.9.7"
 coreKtxVersion = "1.18.0"
 
 paging = "3.3.2"
+ui = "1.11.2"
 
 [libraries]
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
@@ -73,6 +74,7 @@ play-services-location = { group = "com.google.android.gms", name = "play-servic
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtxVersion" }
 opencsv = { group = "com.opencsv", name = "opencsv", version.ref = "opencsv" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

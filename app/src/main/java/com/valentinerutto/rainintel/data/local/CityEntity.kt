@@ -29,7 +29,7 @@ data class CityEntity(
     val time: String?,
     val isSaved: Boolean = false,
     val isRecent: Boolean = false,
-    val recentSearchTimestamp: Long = 0L,)
+    val recentSearchTimestamp: Long = 0L)
 
 fun WeatherResponse.toCityEntity(
     selectedCity: PreloadedCityEntity

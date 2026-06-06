@@ -31,13 +31,14 @@ import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.outlined.Thunderstorm
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -45,6 +46,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,6 +64,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.valentinerutto.rainintel.data.local.CityEntity
+import com.valentinerutto.rainintel.data.local.PreloadedCityEntity
 import com.valentinerutto.rainintel.ui.WeatherViewModel
 import com.valentinerutto.rainintel.ui.theme.BottomNavContentInactive
 import com.valentinerutto.rainintel.ui.theme.BottomNavIndicatorInactive
@@ -79,6 +83,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 private data class RecentCity(
     val name: String,
+    val country: String,
     val temperature: String,
     val saved: Boolean,
 )
@@ -97,22 +102,38 @@ private data class HourlyForecast(
     val selected: Boolean = false,
 )
 
+private fun CityEntity.toRecentCity(): RecentCity {
+    return RecentCity(
+        name = city,
+        country = country,
+        temperature = temperature?.toInt()?.let { "$it°" } ?: "--°",
+        saved = isSaved,
+    )
+}
+
+private fun String.toDisplayCondition(): String {
+    if (isBlank()) return "Weather unavailable"
+
+    return lowercase()
+        .replace('_', ' ')
+        .split(" ")
+        .filter { it.isNotBlank() }
+        .joinToString(" ") { word ->
+            word.replaceFirstChar { char -> char.uppercase() }
+        }
+}
+
 @Composable
 fun SearchScreen(
     modifier: Modifier = Modifier,    viewModel: WeatherViewModel = koinViewModel()
 
 ) {
 
-    var searchQuery by remember { mutableStateOf("") }
+    val searchQuery by viewModel.searchQuery.collectAsState()
 
     val state by viewModel.uiSearchState.collectAsStateWithLifecycle()
 
-    val recentCities = listOf(
-        RecentCity("Paris", "62°", saved = true),
-        RecentCity("Tokyo", "74°", saved = true),
-        RecentCity("New York", "55°", saved = false),
-        RecentCity("Berlin", "48°", saved = false),
-    )
+    val recentCities = state.recentWeather.map { it.toRecentCity() }
 
     val savedCities = listOf(
         SavedCity("Paris", "France", "62°", "Partly Cloudy"),
@@ -145,11 +166,28 @@ fun SearchScreen(
                 onQueryChange = { viewModel.setSearchQuery(it)},
             )
 
+            if (searchQuery.isNotBlank()) {
+                SectionHeader(title = "SEARCH RESULTS")
+                SearchResultsList(
+                    cities = state.searchResults,
+                    onCityClick = viewModel::onCityClicked,
+                )
+            }
+
             SectionHeader(
                 title = "RECENT SEARCHES",
                 action = "Clear All",
+                onActionClick = viewModel::clearRecentSearches,
             )
             RecentSearchGrid(cities = recentCities)
+
+            state.errorMessage?.let { message ->
+                Text(
+                    text = message,
+                    color = FieldGreen,
+                    fontSize = 13.sp,
+                )
+            }
 
             SectionHeader(
                 title = "SAVED CITIES",
@@ -157,7 +195,7 @@ fun SearchScreen(
             )
             SavedCitiesList(cities = savedCities)
 
-            CurrentWeatherCard()
+            CurrentWeatherCard(cityWeather = state.selectedCityWeather)
 
             SectionHeader(title = "HOURLY FORECAST")
             HourlyForecastRow(forecast = hourlyForecast)
@@ -214,6 +252,7 @@ private fun SearchInput(
     onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+
     TextField(
         value = query,
         onValueChange = onQueryChange,
@@ -236,6 +275,17 @@ private fun SearchInput(
                 modifier = Modifier.size(28.dp),
             )
         },
+        trailingIcon = {
+            if (query.isNotEmpty()) {
+                IconButton(onClick = { onQueryChange("") }) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = "Clear search",
+                        tint =  BottomNavContentInactive
+                    )
+                }
+            }
+        },
         singleLine = true,
         shape = RoundedCornerShape(16.dp),
         colors = TextFieldDefaults.colors(
@@ -255,6 +305,7 @@ private fun SectionHeader(
     title: String,
     modifier: Modifier = Modifier,
     action: String? = null,
+    onActionClick: () -> Unit = {},
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -269,7 +320,7 @@ private fun SectionHeader(
             letterSpacing = 0.sp,
         )
         action?.let {
-            TextButton(onClick = {}) {
+            TextButton(onClick = onActionClick) {
                 Text(
                     text = it,
                     color = FreshGreen,
@@ -277,6 +328,90 @@ private fun SectionHeader(
                     fontWeight = FontWeight.SemiBold,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun SearchResultsList(
+    cities: List<PreloadedCityEntity>,
+    onCityClick: (PreloadedCityEntity) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        if (cities.isEmpty()) {
+            Text(
+                text = "No cities found",
+                color = FieldGreen.copy(alpha = 0.72f),
+                fontSize = 15.sp,
+                modifier = Modifier.padding(vertical = 6.dp),
+            )
+        } else {
+            cities.forEach { city ->
+                SearchResultRow(
+                    city = city,
+                    onClick = { onCityClick(city) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchResultRow(
+    city: PreloadedCityEntity,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(76.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, ForecastBorder),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 18.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.LocationOn,
+                contentDescription = null,
+                tint = FreshGreen,
+                modifier = Modifier.size(24.dp),
+            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = city.city,
+                    color = FieldGreen,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = city.country,
+                    color = FieldGreen.copy(alpha = 0.72f),
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Icon(
+                imageVector = Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = FieldGreen,
+                modifier = Modifier.size(24.dp),
+            )
         }
     }
 }
@@ -342,6 +477,13 @@ private fun RecentCityCard(
                     color = FieldGreen,
                     fontSize = 30.sp,
                     fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = city.country,
+                    color = FieldGreen.copy(alpha = 0.68f),
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -418,8 +560,13 @@ private fun SavedCityRow(
 
 @Composable
 private fun CurrentWeatherCard(
+    cityWeather: CityEntity?,
     modifier: Modifier = Modifier,
 ) {
+    val cityName = cityWeather?.city ?: "Select a city"
+    val temperature = cityWeather?.temperature?.toInt()?.let { "$it°" } ?: "--°"
+    val condition = cityWeather?.condition_code?.toDisplayCondition() ?: "Search for weather"
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -467,7 +614,7 @@ private fun CurrentWeatherCard(
                     letterSpacing = 0.sp,
                 )
                 Text(
-                    text = "London",
+                    text = cityName,
                     color = FieldGreen,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -481,14 +628,14 @@ private fun CurrentWeatherCard(
                 horizontalAlignment = Alignment.End,
             ) {
                 Text(
-                    text = "58°",
+                    text = temperature,
                     color = FieldGreen,
                     fontSize = 76.sp,
                     fontWeight = FontWeight.Light,
                     lineHeight = 78.sp,
                 )
                 Text(
-                    text = "Cloudy",
+                    text = condition,
                     color = FieldGreen.copy(alpha = 0.75f),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Medium,

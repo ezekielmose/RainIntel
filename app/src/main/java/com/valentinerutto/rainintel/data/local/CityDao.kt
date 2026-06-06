@@ -41,7 +41,7 @@ interface CityDao {
     suspend fun updateRecentStatus(cityName: String, isRecent: Int, timestamp: Long)
 
 
-    @Query("SELECT * FROM cities_weather ORDER BY recentSearchTimestamp DESC")
+    @Query("SELECT * FROM cities_weather WHERE isRecent = 1 ORDER BY recentSearchTimestamp DESC")
     fun observeRecentCityWeather(): Flow<List<CityEntity>>
     @Query("UPDATE cities_weather SET isRecent = 0")
     suspend fun clearRecentSearches()

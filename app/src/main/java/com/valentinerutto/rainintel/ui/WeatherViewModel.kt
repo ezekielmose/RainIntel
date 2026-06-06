@@ -6,9 +6,13 @@ import com.valentinerutto.rainintel.data.WeatherRepository
 import com.valentinerutto.rainintel.data.local.CityEntity
 import com.valentinerutto.rainintel.data.local.PreloadedCityEntity
 import com.valentinerutto.rainintel.data.models.WeatherUiData
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -23,6 +27,7 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
 
 
     init {
+
         viewModelScope.launch {
             repository.observeWeather().collect { weather ->
                 _uiState.update {
@@ -30,11 +35,65 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
                 }
             }
         }
+
+        viewModelScope.launch {
+            repository.observeRecentWeather().collect { recentWeather ->
+                _uiSearchState.update {
+                    it.copy(recentWeather = recentWeather)
+                }
+            }
+        }
+
+        observeSearch()
     }
 
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
+        _uiSearchState.update {
+            it.copy(
+                searchQuery = query,
+                errorMessage = null
+            )
+        }
+
+
     }
+
+    @OptIn(FlowPreview::class)
+    private fun observeSearch() {
+        viewModelScope.launch {
+            _searchQuery
+                .debounce(300)
+                .distinctUntilChanged()
+                .collectLatest { query ->
+                    if (query.isBlank()) {
+                        _uiSearchState.update {
+                            it.copy(searchResults = emptyList())
+                        }
+                        return@collectLatest
+                    }
+
+                    runCatching {
+                        repository.searchPreloadedCities(query)
+                    }.onSuccess { cities ->
+                        _uiSearchState.update {
+                            it.copy(
+                                searchResults = cities,
+                                errorMessage = null
+                            )
+                        }
+                    }.onFailure { throwable ->
+                        _uiSearchState.update {
+                            it.copy(
+                                searchResults = emptyList(),
+                                errorMessage = throwable.message ?: "Unable to search cities"
+                            )
+                        }
+                    }
+                }
+        }
+    }
+
     fun loadWeather(lat: Double, lon: Double) {
 
         viewModelScope.launch {
@@ -66,7 +125,9 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
         }
     }
 
+
     fun onCityClicked(city: PreloadedCityEntity) {
+
         viewModelScope.launch {
             _uiSearchState.update {
                 it.copy(
@@ -78,10 +139,13 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
             runCatching { repository.getWeatherByCity(city) }
                 .onSuccess { weather ->
 
+                    _searchQuery.value = ""
                     _uiSearchState.update {
                         it.copy(
                             isLoading = false,
                             selectedCityWeather = weather,
+                            searchQuery = "",
+                            searchResults = emptyList(),
                             errorMessage = null
                         )
                     }
@@ -89,7 +153,6 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
                     viewModelScope.launch {
                         repository.addToRecentSearches(weather.city)
                     }
-
 
                 }
                 .onFailure { throwable ->
@@ -101,6 +164,12 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
                     }
                 }
 
+        }
+    }
+
+    fun clearRecentSearches() {
+        viewModelScope.launch {
+            repository.clearRecentSearches()
         }
     }
 

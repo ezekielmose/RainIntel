@@ -13,7 +13,7 @@ import retrofit2.Retrofit
 
  val appModule = module {
     single { MyApplication.INSTANCE }
-   single { WeatherRepository(get(), get()) }
+   single { WeatherRepository(get(), cityDao = get(), weatherDao = get()) }
      viewModel { WeatherViewModel(get()) }
  }
 

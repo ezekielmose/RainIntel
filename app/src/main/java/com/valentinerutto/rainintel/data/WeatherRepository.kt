@@ -51,11 +51,20 @@ class WeatherRepository(
     suspend fun getWeatherByCity(city: PreloadedCityEntity): CityEntity {
         val weatherResponse = apiService.getWeatherByCity(city.city)
 
-      val selectedCity = weatherResponse.toCityEntity(city)
-     cityDao .insertCityWeather(selectedCity)
-    return selectedCity
+        val selectedCity = weatherResponse.toCityEntity(city)
+        cityDao.insertCityWeather(selectedCity)
 
+        return selectedCity
+
+    }
+
+    suspend fun searchPreloadedCities(query: String): List<PreloadedCityEntity> {
+        return if (query.isBlank()) {
+            emptyList()
+        } else {
+            cityDao.search(query.trim())
         }
+    }
 
     suspend fun addToRecentSearches(cityName: String) {
         val timestamp = System.currentTimeMillis()
@@ -69,9 +78,9 @@ class WeatherRepository(
         cityDao.updateRecentStatus(cityName, 0, 0L)
     }
 
-fun observeRecentWeather(): Flow<List<CityEntity>> {
-    return cityDao.observeRecentCityWeather()
-}
+    fun observeRecentWeather(): Flow<List<CityEntity>> {
+        return cityDao.observeRecentCityWeather()
+    }
 
 
     suspend fun refreshWeather(lat: Double, lon: Double) {

@@ -32,20 +32,21 @@ data class CityEntity(
     val recentSearchTimestamp: Long = 0L)
 
 fun WeatherResponse.toCityEntity(
-    selectedCity: PreloadedCityEntity
+    selectedCity: PreloadedCityEntity,
+    existingCity: CityEntity? = null
 ): CityEntity {
     return CityEntity(
         id = selectedCity.id,
         city = selectedCity.city,
-        lat = location?.lat ?: selectedCity.lat,
-        lng = location?.lon ?: selectedCity.lng,
-        country = location?.country ?: selectedCity.country,
+        lat = selectedCity.lat,
+        lng = selectedCity.lng,
+        country = selectedCity.country,
         condition_code = current?.condition_code,
         icon = current?.icon,
         icon_path = current?.icon_path,
         temperature = current?.temperature,
         time = current?.time,
-        isSaved = false,
+        isSaved = existingCity?.isSaved ?: false,
         isRecent = true,
         recentSearchTimestamp = System.currentTimeMillis()
     )

@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.AccountCircle
@@ -82,13 +83,6 @@ import com.valentinerutto.rainintel.ui.theme.ScreenBackground
 import com.valentinerutto.rainintel.util.toDisplayCondition
 import org.koin.compose.viewmodel.koinViewModel
 
-private data class SavedCity(
-    val city: String,
-    val country: String,
-    val temperature: String,
-    val condition: String,
-)
-
 private data class HourlyForecast(
     val label: String,
     val temperature: String,
@@ -107,11 +101,8 @@ fun SearchScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
 
     val state by viewModel.uiSearchState.collectAsStateWithLifecycle()
+    var isSavedCitiesEditMode by remember { mutableStateOf(false) }
 
-    val savedCities = listOf(
-        SavedCity("Paris", "France", "62°", "Partly Cloudy"),
-        SavedCity("Tokyo", "Japan", "74°", "Sunny"),
-    )
 
     val hourlyForecast = listOf(
         HourlyForecast("Now", "58°", Icons.Outlined.Cloud),
@@ -147,15 +138,6 @@ fun SearchScreen(
                 )
             }
 
-//            SectionHeader(
-//                title = "RECENT SEARCHES",
-//                action = "Clear All",
-//                onActionClick = viewModel::clearRecentSearches,
-//            )
-//            RecentSearchGrid(
-//                cities = state.recentWeather,
-//                onCityClick = onRecentCityClick,
-//            )
 
             state.errorMessage?.let { message ->
                 Text(
@@ -165,12 +147,14 @@ fun SearchScreen(
                 )
             }
 
-            SectionHeader(
-                title = "SAVED CITIES",
-                action = "Edit",
+            SavedCitiesSection(
+                savedCities = state.recentWeather,
+                isEditMode = isSavedCitiesEditMode,
+                onEditModeToggle = { isSavedCitiesEditMode = !isSavedCitiesEditMode },
+                onCityClick = viewModel::selectCityWeather,
+                onChevronClick = onRecentCityClick,
+                onToggleSaved = viewModel::toggleSavedCity,
             )
-            SavedCitiesList(               cities = state.recentWeather,
-                onCityClick = onRecentCityClick,)
 
             CurrentWeatherCard(cityWeather = state.selectedCityWeather)
 
@@ -394,103 +378,57 @@ private fun SearchResultRow(
 }
 
 @Composable
-private fun RecentSearchGrid(
-    cities: List<CityEntity>,
+private fun SavedCitiesSection(
+    savedCities: List<CityEntity>,
+    isEditMode: Boolean,
+    onEditModeToggle: () -> Unit,
     onCityClick: (CityEntity) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        cities.chunked(2).forEach { rowCities ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                rowCities.forEach { city ->
-                    RecentCityCard(
-                        city = city,
-                        onClick = { onCityClick(city) },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                if (rowCities.size == 1) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun RecentCityCard(
-    city: CityEntity,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        modifier = modifier
-            .height(136.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        color = InsightGreen,
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Icon(
-                imageVector = if (city.isSaved) Icons.Outlined.Star else Icons.Outlined.StarBorder,
-                contentDescription = null,
-                tint = if (city.isSaved) FreshGreen else BottomNavContentInactive,
-                modifier = Modifier.size(24.dp),
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = city.city,
-                    color = FieldGreen,
-                    fontSize = 18.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = city.country,
-                    color = FieldGreen.copy(alpha = 0.68f),
-                    fontSize = 12.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = city.temperature?.toInt()?.let { "$it°" } ?: "--°",
-                    color = FieldGreen,
-                    fontSize = 30.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = city.condition_code?.toDisplayCondition() ?: "Weather unavailable",
-                    color = FieldGreen.copy(alpha = 0.68f),
-                    fontSize = 12.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SavedCitiesList(
-    cities: List<CityEntity>,
-    onCityClick: (CityEntity) -> Unit,
+    onChevronClick: (CityEntity) -> Unit,
+    onToggleSaved: (CityEntity) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        cities.forEach { city ->
-            SavedCityRow(city = city,{ onCityClick(city) })
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "SAVED CITIES",
+                color = FieldGreen,
+                fontSize = 13.sp,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.sp,
+            )
+            Text(
+                text = if (isEditMode) "Done" else "Edit",
+                color = FreshGreen,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.clickable(onClick = onEditModeToggle),
+            )
+        }
+
+        if (savedCities.isEmpty()) {
+            Text(
+                text = "No saved cities yet",
+                color = FieldGreen.copy(alpha = 0.72f),
+                fontSize = 15.sp,
+                modifier = Modifier.padding(vertical = 6.dp),
+            )
+        } else {
+            savedCities.forEach { city ->
+                SavedCityRow(
+                    city = city,
+                    isEditMode = isEditMode,
+                    onCityClick = { onCityClick(city) },
+                    onChevronClick = { onChevronClick(city) },
+                    onToggleSaved = { onToggleSaved(city) },
+                )
+            }
         }
     }
 }
@@ -498,33 +436,45 @@ private fun SavedCitiesList(
 @Composable
 private fun SavedCityRow(
     city: CityEntity,
-    onClick: () -> Unit,
+    isEditMode: Boolean,
+    onCityClick: () -> Unit,
+    onChevronClick: () -> Unit,
+    onToggleSaved: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .height(94.dp),
+            .height(106.dp),
         shape = RoundedCornerShape(16.dp),
         color = InsightGreen,
+        border = BorderStroke(1.dp, ForecastBorder),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 22.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier
+                .clickable {
+                    if (!isEditMode) {
+                        onCityClick()
+                    }
+                }
+                .padding(horizontal = 18.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                imageVector = Icons.Outlined.Star,
-                contentDescription = null,
-                tint = FreshGreen,
-                modifier = Modifier.size(28.dp),
+                imageVector = if (isEditMode) Icons.Filled.Delete else Icons.Outlined.Star,
+                contentDescription = if (isEditMode) "Remove saved city" else "Saved city",
+                tint = if (isEditMode) Color.Red else FreshGreen,
+                modifier = Modifier
+                    .size(28.dp)
+                    .clickable(onClick = onToggleSaved),
             )
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
             ) {
                 Text(
-                    text = "${city.city}, ${city.country}",
+                    text = city.city,
                     color = FieldGreen,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -532,20 +482,30 @@ private fun SavedCityRow(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = "${city.temperature} ",
+                    text = city.country,
+                    color = FieldGreen.copy(alpha = 0.72f),
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = "${city.temperature?.toInt()?.let { "$it°" } ?: "--°"} • ${city.condition_code?.toDisplayCondition() ?: "Weather unavailable"}",
                     color = FieldGreen.copy(alpha = 0.78f),
-                    fontSize = 16.sp,
+                    fontSize = 13.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Icon(
-                imageVector = Icons.Outlined.ChevronRight,
-                contentDescription = null,
-                tint = FieldGreen,
-                modifier = Modifier.size(28.dp). clickable(onClick = onClick),
-
-            )
+            if (!isEditMode) {
+                Icon(
+                    imageVector = Icons.Outlined.ChevronRight,
+                    contentDescription = null,
+                    tint = FieldGreen,
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clickable(onClick = onChevronClick),
+                )
+            }
         }
     }
 }

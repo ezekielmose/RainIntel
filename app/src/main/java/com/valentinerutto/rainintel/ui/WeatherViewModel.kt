@@ -44,6 +44,14 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
             }
         }
 
+        viewModelScope.launch {
+            repository.observeSavedWeather().collect { savedWeather ->
+                _uiSearchState.update {
+                    it.copy(savedCityWeather = savedWeather)
+                }
+            }
+        }
+
         observeSearch()
     }
 
@@ -169,6 +177,7 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
                 .onSuccess { weather ->
 
                     _searchQuery.value = ""
+
                     _uiSearchState.update {
                         it.copy(
                             isLoading = false,
@@ -179,9 +188,7 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
                         )
                     }
 
-                    viewModelScope.launch {
-                        repository.addToRecentSearches(weather.city)
-                    }
+                    repository.addToRecentSearches(weather)
 
                 }
                 .onFailure { throwable ->
@@ -196,9 +203,17 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
         }
     }
 
-    fun clearRecentSearches() {
+
+
+    fun selectCityWeather(city: CityEntity) {
+        _uiSearchState.update {
+            it.copy(selectedCityWeather = city)
+        }
+    }
+
+    fun toggleSavedCity(city: CityEntity) {
         viewModelScope.launch {
-            repository.clearRecentSearches()
+            repository.toggleSavedCity(city)
         }
     }
 

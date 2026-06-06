@@ -49,9 +49,16 @@ class WeatherRepository(
     }
 
     suspend fun getWeatherByCity(city: PreloadedCityEntity): CityEntity {
-        val weatherResponse = apiService.getWeatherByCity(city.city)
 
-        val selectedCity = weatherResponse.toCityEntity(city)
+        val weatherResponse = apiService.getWeather(
+            lat = city.lat,
+            lon = city.lng
+        )
+
+        val selectedCity = weatherResponse.toCityEntity(
+            selectedCity = city,
+            existingCity = cityDao.getCityWeatherById(city.id)
+        )
 
         weatherDao.replaceWeather(
             currentWeather = weatherResponse.toWeatherEntity(),
@@ -72,20 +79,39 @@ class WeatherRepository(
         }
     }
 
-    suspend fun addToRecentSearches(cityName: String) {
-        val timestamp = System.currentTimeMillis()
-        cityDao.updateRecentStatus(cityName, 1, timestamp)
+    suspend fun addToRecentSearches(city: CityEntity) {
+        cityDao.updateRecentStatusById(
+            cityId = city.id,
+            isRecent = 1,
+            timestamp = System.currentTimeMillis()
+        )
     }
 
     suspend fun clearRecentSearches() {
         cityDao.clearRecentSearches()
     }
-    suspend fun removeFromRecentSearches(cityName: String) {
-        cityDao.updateRecentStatus(cityName, 0, 0L)
+
+    suspend fun removeFromRecentSearches(city: CityEntity) {
+        cityDao.updateRecentStatusById(
+            cityId = city.id,
+            isRecent = 0,
+            timestamp = 0L
+        )
     }
 
     fun observeRecentWeather(): Flow<List<CityEntity>> {
         return cityDao.observeRecentCityWeather()
+    }
+
+    fun observeSavedWeather(): Flow<List<CityEntity>> {
+        return cityDao.getSavedCities()
+    }
+
+    suspend fun toggleSavedCity(city: CityEntity) {
+        cityDao.updateSavedStatusById(
+            cityId = city.id,
+            isSaved = if (city.isSaved) 0 else 1
+        )
     }
 
 

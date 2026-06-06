@@ -15,6 +15,13 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
     private val _uiState = MutableStateFlow(WeatherUiState())
     val uiState: StateFlow<WeatherUiState> = _uiState.asStateFlow()
 
+
+
+
+
+
+
+
     init {
         viewModelScope.launch {
             repository.observeWeather().collect { weather ->

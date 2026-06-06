@@ -215,10 +215,12 @@ fun HomeScreen(
                 isRefreshing = uiState.isLoading,
                 onRefresh = ::refreshWeather
             )
+
             WeatherHeroCard(weather = uiState.weather)
             uiState.errorMessage?.let { message ->
                 WeatherErrorText(message = message)
             }
+
             SectionTitle("5-day forecast")
             ForecastRow(
                 days = forecastDays,

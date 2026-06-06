@@ -42,6 +42,19 @@ class WeatherRepository(
         refreshWeather(lat, lon)
     }
 
+    suspend fun getWeatherByCity(city: String): WeatherUiData {
+
+        val weatherResponse = apiService.getWeatherByCity(city)
+
+return weatherResponse.let {
+    WeatherUiData(
+        currentWeather = it.toWeatherEntity(),
+        dailyWeather = mapToDailyWeatherEntity(it)
+    )
+}
+    }
+
+
     suspend fun refreshWeather(lat: Double, lon: Double) {
         val weatherResponse = apiService.getWeather(lat, lon)
         weatherDao.replaceWeather(

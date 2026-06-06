@@ -40,6 +40,7 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -115,6 +116,9 @@ fun SearchScreen(
     ) {
 
         HorizontalDivider(color = ForecastBorder)
+        if (state.isLoading) {
+            SearchLoadingIndicator()
+        }
 
         Column(
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 22.dp),
@@ -159,6 +163,19 @@ fun SearchScreen(
             Spacer(modifier = Modifier.height(20.dp))
         }
     }
+}
+
+@Composable
+private fun SearchLoadingIndicator(
+    modifier: Modifier = Modifier,
+) {
+    LinearProgressIndicator(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(3.dp),
+        color = FreshGreen,
+        trackColor = ForecastBorder,
+    )
 }
 
 

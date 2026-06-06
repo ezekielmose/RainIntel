@@ -10,6 +10,7 @@ import com.valentinerutto.rainintel.data.local.toCityEntity
 import com.valentinerutto.rainintel.data.local.toWeatherEntity
 import com.valentinerutto.rainintel.data.models.WeatherUiData
 import com.valentinerutto.rainintel.data.network.ApiService
+import com.valentinerutto.rainintel.data.network.response.WeatherResponse
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import java.text.SimpleDateFormat
@@ -37,7 +38,6 @@ class WeatherRepository(
     }
 
     suspend fun getWeather(lat: Double, lon: Double) {
-
         val currentWeather = weatherDao.getCurrentLatest()
         val dailyWeather = weatherDao.getDaily()
 
@@ -45,12 +45,11 @@ class WeatherRepository(
             return
         }
 
-        refreshWeather(lat, lon)
+        refreshWeatherForLocation(lat, lon)
     }
 
-    suspend fun getWeatherByCity(city: PreloadedCityEntity): CityEntity {
-
-        val weatherResponse = apiService.getWeather(
+    suspend fun refreshWeatherForPreloadedCity(city: PreloadedCityEntity): CityEntity {
+        val weatherResponse = refreshWeatherForLocation(
             lat = city.lat,
             lon = city.lng
         )
@@ -60,15 +59,9 @@ class WeatherRepository(
             existingCity = cityDao.getCityWeatherById(city.id)
         )
 
-        weatherDao.replaceWeather(
-            currentWeather = weatherResponse.toWeatherEntity(),
-            dailyWeather = mapToDailyWeatherEntity(weatherResponse)
-        )
-
         cityDao.insertCityWeather(selectedCity)
 
         return selectedCity
-
     }
 
     suspend fun searchPreloadedCities(query: String): List<PreloadedCityEntity> {
@@ -114,13 +107,13 @@ class WeatherRepository(
         )
     }
 
-
-    suspend fun refreshWeather(lat: Double, lon: Double) {
+    suspend fun refreshWeatherForLocation(lat: Double, lon: Double): WeatherResponse {
         val weatherResponse = apiService.getWeather(lat, lon)
         weatherDao.replaceWeather(
             currentWeather = weatherResponse.toWeatherEntity(),
             dailyWeather = mapToDailyWeatherEntity(weatherResponse)
         )
+        return weatherResponse
     }
 
     private fun WeatherEntity.isFresh(): Boolean {

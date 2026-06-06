@@ -142,7 +142,7 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
                 )
             }
 
-            runCatching { repository.refreshWeather(lat, lon) }
+            runCatching { repository.refreshWeatherForLocation(lat, lon) }
                 .onSuccess {
                     _uiState.update {
                         it.copy(
@@ -173,7 +173,7 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
                 )
             }
 
-            runCatching { repository.getWeatherByCity(city) }
+            runCatching { repository.refreshWeatherForPreloadedCity(city) }
                 .onSuccess { weather ->
 
                     _searchQuery.value = ""

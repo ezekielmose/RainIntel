@@ -3,6 +3,7 @@ package com.valentinerutto.rainintel.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.valentinerutto.rainintel.data.WeatherRepository
+import com.valentinerutto.rainintel.data.local.CityEntity
 import com.valentinerutto.rainintel.data.models.WeatherUiData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class WeatherViewModel(private val repository: WeatherRepository) : ViewModel()  {
+class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WeatherUiState())
     val uiState: StateFlow<WeatherUiState> = _uiState.asStateFlow()
@@ -18,15 +19,10 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    val allCities: StateFlow<List<CityEntity>>
-    val savedCities: StateFlow<List<CityEntity>>
-    val recentSearches: StateFlow<List<CityEntity>>
-
-
-
-
 
     init {
+
+
         viewModelScope.launch {
             repository.observeWeather().collect { weather ->
                 _uiState.update {
@@ -35,6 +31,7 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
             }
         }
     }
+
 
     fun loadWeather(lat: Double, lon: Double) {
 

@@ -96,12 +96,6 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 
-private data class BottomNavDestination(
-    val label: String,
-    val icon: ImageVector,
-    val selected: Boolean = false,
-)
-
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
@@ -197,38 +191,31 @@ fun HomeScreen(
 
     val forecastDays = uiState.weather.toForecastDays(selectedForecastIndex)
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = ScreenBackground,
-        contentWindowInsets = WindowInsets(0.dp),
-        bottomBar = { RainIntelBottomBar() },
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .verticalScroll(rememberScrollState()),
-        ) {
-            HomeHeader(
-                locationName = locationName,
-                isRefreshing = uiState.isLoading,
-                onRefresh = ::refreshWeather
-            )
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(ScreenBackground)
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .verticalScroll(rememberScrollState()),
+    ) {
+        HomeHeader(
+            locationName = locationName,
+            isRefreshing = uiState.isLoading,
+            onRefresh = ::refreshWeather
+        )
 
-            WeatherHeroCard(weather = uiState.weather)
-            uiState.errorMessage?.let { message ->
-                WeatherErrorText(message = message)
-            }
-
-            SectionTitle("5-day forecast")
-            ForecastRow(
-                days = forecastDays,
-                onForecastClick = { index -> selectedForecastIndex = index }
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
+        WeatherHeroCard(weather = uiState.weather)
+        uiState.errorMessage?.let { message ->
+            WeatherErrorText(message = message)
         }
+
+        SectionTitle("5-day forecast")
+        ForecastRow(
+            days = forecastDays,
+            onForecastClick = { index -> selectedForecastIndex = index }
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
     }
 
     locationErrorMessage?.let { message ->
@@ -640,68 +627,6 @@ private fun AiInsightCard() {
                 modifier = Modifier.padding(top = 6.dp),
             )
         }
-    }
-}
-
-
-
-@Composable
-private fun RainIntelBottomBar() {
-
-    val destinations = listOf(
-        BottomNavDestination("Home", Icons.Filled.Home, selected = true),
-        BottomNavDestination("Search", Icons.Filled.Search)
-    )
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White)
-            .windowInsetsPadding(WindowInsets.navigationBars),
-        horizontalArrangement = Arrangement.SpaceAround,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        destinations.forEach { destination ->
-            BottomNavItem(
-                destination = destination,
-                modifier = Modifier.weight(1f),
-            )
-        }
-    }
-}
-
-@Composable
-private fun BottomNavItem(
-    destination: BottomNavDestination,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .clickable { }
-            .padding(top = 12.dp, bottom = 10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .width(18.dp)
-                .height(3.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(if (destination.selected) FreshGreen else BottomNavIndicatorInactive),
-        )
-        Icon(
-            imageVector = destination.icon,
-            contentDescription = destination.label,
-            tint = if (destination.selected) DeepGreen else BottomNavContentInactive,
-            modifier = Modifier.size(22.dp),
-        )
-        Text(
-            text = destination.label,
-            color = if (destination.selected) DeepGreen else BottomNavLabelInactive,
-            fontSize = 10.sp,
-            fontWeight = if (destination.selected) FontWeight.SemiBold else FontWeight.Medium,
-            maxLines = 1,
-        )
     }
 }
 

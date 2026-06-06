@@ -52,6 +52,7 @@ return weatherResponse.let {
         dailyWeather = mapToDailyWeatherEntity(it)
     )
 }
+
     }
 
 

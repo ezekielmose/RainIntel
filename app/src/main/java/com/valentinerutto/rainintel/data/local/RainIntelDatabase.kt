@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [WeatherEntity::class,DailyWeatherEntity::class, PreloadedCityEntity::class], version = 2, exportSchema = false)
+@Database(entities = [WeatherEntity::class,DailyWeatherEntity::class, PreloadedCityEntity::class, CityEntity::class], version = 2, exportSchema = false)
 abstract class RainIntelDatabase: RoomDatabase() {
 
     abstract fun weatherDao(): WeatherDao

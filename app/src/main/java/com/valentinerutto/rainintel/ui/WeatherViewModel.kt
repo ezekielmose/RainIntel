@@ -31,7 +31,10 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
         viewModelScope.launch {
             repository.observeWeather().collect { weather ->
                 _uiState.update {
-                    it.copy(weather = weather)
+                    it.copy(
+                        weather = weather,
+                        hasCheckedLocalWeather = true
+                    )
                 }
             }
         }
@@ -127,6 +130,35 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
                         it.copy(
                             isLoading = false,
                             errorMessage = throwable.message ?: "Unable to load weather"
+                        )
+                    }
+                }
+        }
+    }
+
+    fun refreshWeather(lat: Double, lon: Double) {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null
+                )
+            }
+
+            runCatching { repository.refreshWeatherForLocation(lat, lon) }
+                .onSuccess {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = null
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = throwable.message ?: "Unable to refresh weather"
                         )
                     }
                 }
@@ -238,7 +270,8 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
 data class WeatherUiState(
     val weather: WeatherUiData? = null,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val hasCheckedLocalWeather: Boolean = false
 )
 
 data class WeatherSearchUiState(

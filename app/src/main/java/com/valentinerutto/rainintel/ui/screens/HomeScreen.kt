@@ -131,6 +131,19 @@ fun HomeScreen(
     var locationName by remember { mutableStateOf("Current location") }
 
     val locationProvider = remember(context) { DeviceLocationProvider(context) }
+    var hasLocationPermission by remember {
+        mutableStateOf(locationProvider.hasLocationPermission())
+    }
+    var hasRequestedLocationPermission by remember { mutableStateOf(false) }
+    var hasHandledInitialHomeLoad by remember(
+        selectedCityLat,
+        selectedCityLng,
+        selectedCityName
+    ) {
+        mutableStateOf(false)
+    }
+    var isResolvingLocation by remember { mutableStateOf(false) }
+    val isHomeLoading = uiState.isLoading || isResolvingLocation
 
     fun showLocationError(message: String, canTurnOnGps: Boolean = false) {
         locationErrorMessage = message
@@ -140,6 +153,15 @@ fun HomeScreen(
     fun clearLocationError() {
         locationErrorMessage = null
         showTurnOnGpsAction = false
+    }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        hasLocationPermission = permissions.values.any { isGranted -> isGranted }
+        if (!hasLocationPermission) {
+            showLocationError(locationPermissionRequiredMessage)
+        }
     }
 
     val locationSettingsLauncher = rememberLauncherForActivityResult(
@@ -198,32 +220,69 @@ fun HomeScreen(
         }
 
         coroutineScope.launch {
-            
-            loadWeatherFromCurrentLocation(
-                locationProvider = locationProvider,
-                weatherViewModel = weatherViewModel,
-                onLocationNameChanged = { name -> locationName = name },
-                onLocationError = ::showLocationError
-            )
+            isResolvingLocation = true
+            try {
+                loadWeatherFromCurrentLocation(
+                    locationProvider = locationProvider,
+                    weatherViewModel = weatherViewModel,
+                    onLocationNameChanged = { name -> locationName = name },
+                    onLocationError = ::showLocationError,
+                    forceRefresh = true
+                )
+            } finally {
+                isResolvingLocation = false
+            }
         }
     }
 
-    LaunchedEffect(selectedCityLat, selectedCityLng, selectedCityName) {
+    LaunchedEffect(
+        selectedCityLat,
+        selectedCityLng,
+        selectedCityName,
+        hasLocationPermission,
+        uiState.hasCheckedLocalWeather,
+        uiState.weather
+    ) {
+        if (hasHandledInitialHomeLoad) return@LaunchedEffect
+
         val lat = selectedCityLat
         val lng = selectedCityLng
 
         if (lat != null && lng != null) {
+            hasHandledInitialHomeLoad = true
             selectedCityName?.takeIf { it.isNotBlank() }?.let { name ->
                 locationName = name
             }
             weatherViewModel.loadWeatherForSelectedCity(lat, lng)
-        } else if (locationProvider.hasLocationPermission()) {
+            return@LaunchedEffect
+        }
+
+        if (!hasLocationPermission) {
+            if (!hasRequestedLocationPermission) {
+                hasRequestedLocationPermission = true
+                locationPermissionLauncher.launch(DeviceLocationProvider.LOCATION_PERMISSIONS)
+            }
+            return@LaunchedEffect
+        }
+
+        if (!uiState.hasCheckedLocalWeather) return@LaunchedEffect
+
+        if (uiState.weather != null) {
+            hasHandledInitialHomeLoad = true
+            return@LaunchedEffect
+        }
+
+        hasHandledInitialHomeLoad = true
+        isResolvingLocation = true
+        try {
             loadWeatherFromCurrentLocation(
                 locationProvider = locationProvider,
                 weatherViewModel = weatherViewModel,
                 onLocationNameChanged = { name -> locationName = name },
                 onLocationError = ::showLocationError
             )
+        } finally {
+            isResolvingLocation = false
         }
     }
 
@@ -240,11 +299,11 @@ fun HomeScreen(
 
         HomeHeader(
             locationName = locationName,
-            isRefreshing = uiState.isLoading,
+            isRefreshing = isHomeLoading,
             onRefresh = ::refreshWeather
         )
 
-        if (uiState.isLoading) {
+        if (isHomeLoading) {
             HomeLoadingIndicator()
         }
 
@@ -281,9 +340,6 @@ private fun HomeLoadingIndicator(
         trackColor = ForecastBorder,
     )
 }
-
-
-
 
 private data class DashboardWeather(
     val temperature: String,
@@ -331,7 +387,7 @@ private fun WeatherUiData?.toDashboardForecastRows(): List<DashboardForecastRow>
       )
     }
 
-    return daily.take(5).mapIndexed { index, day ->
+    return daily.take(7).mapIndexed { index, day ->
         val condition = day.condition_code.toDisplayCondition()
         DashboardForecastRow(
             day = if (index == 0) "Today" else day.dayOfTheWeek,
@@ -601,7 +657,8 @@ private suspend fun loadWeatherFromCurrentLocation(
     locationProvider: DeviceLocationProvider,
     weatherViewModel: WeatherViewModel,
     onLocationNameChanged: (String) -> Unit,
-    onLocationError: (message: String, canTurnOnGps: Boolean) -> Unit
+    onLocationError: (message: String, canTurnOnGps: Boolean) -> Unit,
+    forceRefresh: Boolean = false
 ) {
 
     when (val locationResult = locationProvider.getCurrentLocation()) {
@@ -616,10 +673,17 @@ private suspend fun loadWeatherFromCurrentLocation(
                 is LocationNameResult.Error -> Unit
             }
 
-            weatherViewModel.loadWeather(
-                lat = locationResult.location.latitude,
-                lon = locationResult.location.longitude
-            )
+            if (forceRefresh) {
+                weatherViewModel.refreshWeather(
+                    lat = locationResult.location.latitude,
+                    lon = locationResult.location.longitude
+                )
+            } else {
+                weatherViewModel.loadWeather(
+                    lat = locationResult.location.latitude,
+                    lon = locationResult.location.longitude
+                )
+            }
         }
 
         LocationResult.PermissionDenied -> {

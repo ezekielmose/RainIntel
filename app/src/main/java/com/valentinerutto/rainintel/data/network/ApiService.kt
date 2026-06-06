@@ -1,6 +1,5 @@
 package com.valentinerutto.rainintel.data.network
 
-import com.valentinerutto.rainintel.data.network.response.TreeAnalysisResponse
 import com.valentinerutto.rainintel.data.network.response.WeatherResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -19,14 +18,11 @@ interface ApiService {
                                         @Query("ai") ai: Boolean = true,
                                         @Query("units") units: String = "metric",
                                         @Query("lang") lang: String = "en"): WeatherResponse
-@Multipart
-    @POST("trees/analyze")
-    suspend fun analyzeTrees(  @Part image: MultipartBody.Part,
-                                   @Part("farmerId") farmerId: RequestBody?,
-                                   @Part("county") county: RequestBody?,
-                                   @Part("landAcres") landAcres: RequestBody?,
-                                   @Part("location") location: RequestBody?,
-                                   @Part("notes") notes: RequestBody?) : TreeAnalysisResponse
+    @GET("weather-geo")
+    suspend fun getWeatherByCity(
+        @Query("city") city: String,
+                                                                           @Query("units") units: String = "metric",
+) : WeatherResponse
 
 
 

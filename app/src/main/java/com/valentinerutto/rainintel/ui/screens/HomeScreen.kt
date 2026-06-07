@@ -325,6 +325,7 @@ fun HomeScreen(
         DashboardHero(weather = dashboardWeather)
 
         TodayDetailsCard(weather = dashboardWeather)
+
         SevenDayForecastCard(days = forecastRows)
 
         Spacer(modifier = Modifier.height(28.dp))
@@ -521,12 +522,7 @@ private fun TodayDetailsCard(
                     icon = Icons.Outlined.Air,
                     modifier = Modifier.weight(1f),
                 )
-                DetailTile(
-                    label = "UV Index",
-                    value = weather.uvIndex,
-                    icon = Icons.Outlined.WbSunny,
-                    modifier = Modifier.weight(1f),
-                )
+
             }
         }
     }
@@ -883,31 +879,6 @@ private fun WeatherErrorText(message: String) {
     )}
 }
 
-@Composable
-private fun WeatherStat(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier) {
-        Text(
-            text = label,
-            color = Color.White.copy(alpha = 0.64f),
-            fontSize = 10.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = value,
-            color = Color.White,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-    }
-}
 
 
 @Preview(showBackground = true, widthDp = 320)

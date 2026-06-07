@@ -112,6 +112,10 @@ WEATHER_API_KEY=wai_your_key_here
 
 The app sends the key as a Bearer token when calling the Weather AI API.
 
+## Download APK
+
+Download the latest APK here: [RainItel.apk](app/src/main/assets/RainItel.apk).
+
 ## Widget Install Guide
 
 The RainIntel widget shows the latest cached weather from the app database. It updates when the app is opened and weather is refreshed.

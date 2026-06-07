@@ -26,7 +26,7 @@ class WeatherAlertWorkScheduler(
             .setConstraints(constraints)
             .setBackoffCriteria(
                 BackoffPolicy.EXPONENTIAL,
-                Duration.ofMinutes(15)
+                Duration.ofMinutes(180)
             )
             .build()
 
@@ -34,7 +34,7 @@ class WeatherAlertWorkScheduler(
             .setConstraints(constraints)
             .setBackoffCriteria(
                 BackoffPolicy.EXPONENTIAL,
-                Duration.ofMinutes(15)
+                Duration.ofMinutes(180)
             )
             .build()
 

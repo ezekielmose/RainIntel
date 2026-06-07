@@ -11,6 +11,9 @@ import com.valentinerutto.rainintel.data.models.ForecastDay
 import com.valentinerutto.rainintel.ui.theme.Mint
 import com.valentinerutto.rainintel.ui.theme.RainBlue
 import com.valentinerutto.rainintel.ui.theme.SunYellow
+import org.json.JSONObject
+import retrofit2.HttpException
+import java.io.IOException
 import java.time.LocalDate
 import java.util.Locale
 import java.time.LocalDateTime
@@ -128,6 +131,27 @@ fun String.toDisplayCondition(): String {
         else -> Mint
     }
 }
+ fun Throwable.toWeatherErrorMessage(fallbackMessage: String): String {
+    return when (this) {
+        is HttpException -> parseApiErrorMessage() ?: fallbackMessage
+        is IOException -> "Check your internet connection and try again."
+        else -> message?.takeIf { it.isNotBlank() } ?: fallbackMessage
+    }
+}
+
+ fun HttpException.parseApiErrorMessage(): String? {
+    val errorBody = response()?.errorBody()?.string().orEmpty()
+    if (errorBody.isBlank()) return message()
+
+    return runCatching {
+        val json = JSONObject(errorBody)
+        listOfNotNull(
+            json.optString("error").takeIf { it.isNotBlank() },
+            json.optString("tip").takeIf { it.isNotBlank() }
+        ).joinToString(separator = " ")
+    }.getOrNull()?.takeIf { it.isNotBlank() } ?: message()
+}
+
 private const val API_DATE_TIME_PATTERN = "yyyy-MM-dd'T'HH:mm"
 private const val API_DATE_PATTERN = "yyyy-MM-dd"
 private const val DISPLAY_DATE_TIME_PATTERN ="yyyy-MM-dd\nHH:mm"

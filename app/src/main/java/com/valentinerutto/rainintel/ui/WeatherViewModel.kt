@@ -6,6 +6,7 @@ import com.valentinerutto.rainintel.data.WeatherRepository
 import com.valentinerutto.rainintel.data.local.CityEntity
 import com.valentinerutto.rainintel.data.local.PreloadedCityEntity
 import com.valentinerutto.rainintel.data.models.WeatherUiData
+import com.valentinerutto.rainintel.util.toWeatherErrorMessage
 import com.valentinerutto.rainintel.widget.RainIntelWidgetUpdater
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +17,9 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.json.JSONObject
+import retrofit2.HttpException
+import java.io.IOException
 
 class WeatherViewModel(
     private val repository: WeatherRepository,
@@ -134,7 +138,7 @@ class WeatherViewModel(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = throwable.message ?: "Unable to load weather"
+                            errorMessage = throwable.toWeatherErrorMessage("Unable to load weather")
                         )
                     }
                 }
@@ -164,7 +168,7 @@ class WeatherViewModel(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = throwable.message ?: "Unable to refresh weather"
+                            errorMessage = throwable.toWeatherErrorMessage("Unable to refresh weather")
                         )
                     }
                 }
@@ -194,7 +198,7 @@ class WeatherViewModel(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = throwable.message ?: "Unable to load weather"
+                            errorMessage = throwable.toWeatherErrorMessage("Unable to load weather")
                         )
                     }
                 }
@@ -235,7 +239,7 @@ class WeatherViewModel(
                     _uiSearchState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = throwable.message ?: "Unable to load weather"
+                            errorMessage = throwable.toWeatherErrorMessage("Unable to load weather")
                         )
                     }
                 }
@@ -274,6 +278,7 @@ class WeatherViewModel(
     }
 
 }
+
 
 data class WeatherUiState(
     val weather: WeatherUiData? = null,

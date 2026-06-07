@@ -109,6 +109,7 @@ import com.valentinerutto.rainintel.util.withSelectedIndex
 import com.valentinerutto.rainintel.widget.WidgetLocationStore
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import retrofit2.http.Body
 
 
 @Composable
@@ -316,10 +317,12 @@ fun HomeScreen(
             HomeLoadingIndicator()
         }
 
-        DashboardHero(weather = dashboardWeather)
+
         uiState.errorMessage?.let { message ->
-            WeatherErrorText(message = message)
+            WeatherErrorText(message = message )
         }
+
+        DashboardHero(weather = dashboardWeather)
 
         TodayDetailsCard(weather = dashboardWeather)
         SevenDayForecastCard(days = forecastRows)
@@ -871,12 +874,13 @@ private fun HomeHeader(
 
 @Composable
 private fun WeatherErrorText(message: String) {
+    Box(modifier = Modifier.fillMaxWidth().padding(12.dp).background(Color.Red)){
     Text(
         text = message,
-        color = FieldGreen,
-        fontSize = 12.sp,
+        color = Color.White,
+        fontSize = 18.sp,
         modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp),
-    )
+    )}
 }
 
 @Composable

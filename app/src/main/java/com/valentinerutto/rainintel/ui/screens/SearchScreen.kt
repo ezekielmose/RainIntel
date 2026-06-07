@@ -139,11 +139,7 @@ fun SearchScreen(
 
 
             state.errorMessage?.let { message ->
-                Text(
-                    text = message,
-                    color = FieldGreen,
-                    fontSize = 13.sp,
-                )
+        WeatherErrorText(message)
             }
 
             SavedCitiesSection(
@@ -164,7 +160,16 @@ fun SearchScreen(
         }
     }
 }
-
+@Composable
+private fun WeatherErrorText(message: String) {
+    Box(modifier = Modifier.fillMaxWidth().padding(12.dp).background(Color.Red)){
+        Text(
+            text = message,
+            color = Color.White,
+            fontSize = 18.sp,
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp),
+        )}
+}
 @Composable
 private fun SearchLoadingIndicator(
     modifier: Modifier = Modifier,
